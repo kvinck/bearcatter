@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
@@ -401,7 +400,7 @@ func (c *Config) Serve() {
 
 						filePath := fmt.Sprintf("%s/%s", c.RecordingsPath, ctrl.incomingFile.Name)
 
-						if saveAudioErr := ioutil.WriteFile(filePath, ctrl.incomingFile.Data, 0777); saveAudioErr != nil {
+						if saveAudioErr := os.WriteFile(filePath, ctrl.incomingFile.Data, 0777); saveAudioErr != nil {
 							log.Errorf("File %s: Error when saving audio file: %v\n", ctrl.incomingFile.Name, saveAudioErr)
 							continue
 						}
@@ -417,7 +416,7 @@ func (c *Config) Serve() {
 							continue
 						}
 
-						if saveMetadataErr := ioutil.WriteFile(fmt.Sprintf("%s.json", filePath), metadataJSON, 0777); saveMetadataErr != nil {
+						if saveMetadataErr := os.WriteFile(fmt.Sprintf("%s.json", filePath), metadataJSON, 0777); saveMetadataErr != nil {
 							log.Errorf("File %s: Error when saving metadata file: %v\n", ctrl.incomingFile.Name, saveMetadataErr)
 							continue
 						}
