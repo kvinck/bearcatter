@@ -20,8 +20,8 @@ import (
 type Config struct {
 	UDPAddress     *net.UDPAddr
 	USBPath        string
-	WebSocketPort  int
 	RecordingsPath string
+	WebSocketPort  int
 }
 
 func (c *Config) Serve() {
@@ -76,7 +76,7 @@ func (c *Config) Serve() {
 
 	// receive message from server
 	go func(ctrl *ScannerCtrl) {
-		var do_quit bool = false
+		do_quit := false
 
 		xmlMessage := make([]byte, 0)
 		isXML := false

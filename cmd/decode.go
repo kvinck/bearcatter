@@ -16,16 +16,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var recordingsPath string
-var outputFileName string
-var outputFilePath string
-var outputFormat string
-var continueOnError bool
-var jsonIndent string
-var jsonMultipleFiles bool
-var jsonMultipleFilesCount int
-var csvDelimiter string
-var csvUseCRLF bool
+var (
+	recordingsPath         string
+	outputFileName         string
+	outputFilePath         string
+	outputFormat           string
+	continueOnError        bool
+	jsonIndent             string
+	jsonMultipleFiles      bool
+	jsonMultipleFilesCount int
+	csvDelimiter           string
+	csvUseCRLF             bool
+)
 
 // decodeCmd represents the decode command
 var decodeCmd = &cobra.Command{
@@ -180,9 +182,10 @@ func findWAVs(files *[]string) filepath.WalkFunc {
 func save(in interface{}, outputFile *os.File) error {
 	var marshalled []byte
 	var marshalErr error
-	if outputFormat == "csv" {
+	switch outputFormat {
+	case "csv":
 		marshalled, marshalErr = gocsv.MarshalBytes(in)
-	} else if outputFormat == "json" {
+	case "json":
 		if jsonIndent == "" {
 			marshalled, marshalErr = json.Marshal(in)
 		} else {

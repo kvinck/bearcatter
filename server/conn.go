@@ -15,15 +15,13 @@ const (
 )
 
 type ScannerConn struct {
-	Type string
-
 	udpAddress *net.UDPAddr
 	udpConn    *net.UDPConn
-
-	usbPort   string
-	usbConfig *serial.Config
-	usbConn   *serial.Port
-	usbReader *bufio.Scanner
+	usbConfig  *serial.Config
+	usbConn    *serial.Port
+	usbReader  *bufio.Scanner
+	Type       string
+	usbPort    string
 }
 
 func NewUDPConn(addr *net.UDPAddr) (*ScannerConn, error) {
@@ -43,9 +41,10 @@ func NewUSBConn(path string) (*ScannerConn, error) {
 
 func (c *ScannerConn) Open() error {
 	var connErr error
-	if c.Type == ConnTypeNetwork {
+	switch c.Type {
+	case ConnTypeNetwork:
 		c.udpConn, connErr = net.DialUDP("udp", nil, c.udpAddress)
-	} else if c.Type == ConnTypeUSB {
+	case ConnTypeUSB:
 		c.usbConn, connErr = serial.OpenPort(c.usbConfig)
 		c.usbReader = bufio.NewScanner(c.usbConn)
 		c.usbReader.Split(ScanLinesWithCR)
@@ -54,28 +53,31 @@ func (c *ScannerConn) Open() error {
 }
 
 func (c ScannerConn) Close() error {
-	if c.Type == ConnTypeNetwork {
+	switch c.Type {
+	case ConnTypeNetwork:
 		return c.udpConn.Close()
-	} else if c.Type == ConnTypeUSB {
+	case ConnTypeUSB:
 		return c.usbConn.Close()
 	}
 	return nil
 }
 
 func (c ScannerConn) Write(b []byte) (n int, err error) {
-	if c.Type == ConnTypeNetwork {
+	switch c.Type {
+	case ConnTypeNetwork:
 		return c.udpConn.Write(b)
-	} else if c.Type == ConnTypeUSB {
-		fixed := []byte(strings.Replace(string(b), "\n", "\r", -1))
+	case ConnTypeUSB:
+		fixed := []byte(strings.ReplaceAll(string(b), "\n", "\r"))
 		return c.usbConn.Write(fixed)
 	}
 	return 0, nil
 }
 
 func (c ScannerConn) Read(b []byte) (n int, err error) {
-	if c.Type == ConnTypeNetwork {
+	switch c.Type {
+	case ConnTypeNetwork:
 		return c.udpConn.Read(b)
-	} else if c.Type == ConnTypeUSB {
+	case ConnTypeUSB:
 		if !c.usbReader.Scan() {
 			return 0, nil
 		}
@@ -87,9 +89,10 @@ func (c ScannerConn) Read(b []byte) (n int, err error) {
 }
 
 func (c ScannerConn) String() string {
-	if c.Type == ConnTypeNetwork {
+	switch c.Type {
+	case ConnTypeNetwork:
 		return fmt.Sprintf("Connected to %s via UDP", c.udpAddress)
-	} else if c.Type == ConnTypeUSB {
+	case ConnTypeUSB:
 		return fmt.Sprintf("Connected to %s via USB", c.usbPort)
 	}
 	return "unknown"

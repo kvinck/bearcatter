@@ -10,9 +10,11 @@ import (
 	"github.com/Bearcatter/bearcatter/wavparse"
 )
 
-type SDSKeyType string
-type SDSKeyModeType string
-type GltXmlType int
+type (
+	SDSKeyType     string
+	SDSKeyModeType string
+	GltXmlType     int
+)
 
 const (
 	DefaultGoProcMultiplier = 5
@@ -85,10 +87,8 @@ const (
 	AprModeRESME APRModeType = "RESUME"
 )
 
-var (
-	// validKeys = loadValidKeys()
-	TERMINATE = "quit\r"
-)
+// validKeys = loadValidKeys()
+var TERMINATE = "quit\r"
 
 type ScannerInfo struct {
 	XMLName     xml.Name `xml:"ScannerInfo"`
@@ -192,11 +192,6 @@ type ScannerInfo struct {
 		Rssi      string `xml:"Rssi,attr"`
 	} `xml:"Property"`
 	ViewDescription struct {
-		Text      string `xml:",chardata"`
-		PlainText []struct {
-			Chardata string `xml:",chardata"`
-			AttrText string `xml:"Text,attr"`
-		} `xml:"PlainText"`
 		PopupScreen struct {
 			Chardata string `xml:",chardata"`
 			AttrText string `xml:"Text,attr"`
@@ -206,10 +201,20 @@ type ScannerInfo struct {
 				KeyCode  string `xml:"KeyCode,attr"`
 			} `xml:"Button"`
 		} `xml:"PopupScreen"`
+		Text      string `xml:",chardata"`
+		PlainText []struct {
+			Chardata string `xml:",chardata"`
+			AttrText string `xml:"Text,attr"`
+		} `xml:"PlainText"`
 	} `xml:"ViewDescription"`
 }
 
 type GltFLInfo struct {
+	Footer struct {
+		Text string `xml:",chardata"`
+		No   string `xml:"No,attr"`
+		EOT  string `xml:"EOT,attr"`
+	} `xml:"Footer"`
 	XMLName xml.Name `xml:"GLT"`
 	Text    string   `xml:",chardata"`
 	FL      []struct {
@@ -220,14 +225,14 @@ type GltFLInfo struct {
 		QKey    string `xml:"Q_Key,attr"`
 		NTag    string `xml:"N_Tag,attr"`
 	} `xml:"FL"`
+}
+
+type GltSysInfo struct {
 	Footer struct {
 		Text string `xml:",chardata"`
 		No   string `xml:"No,attr"`
 		EOT  string `xml:"EOT,attr"`
 	} `xml:"Footer"`
-}
-
-type GltSysInfo struct {
 	XMLName xml.Name `xml:"GLT"`
 	Text    string   `xml:",chardata"`
 	SYS     []struct {
@@ -240,14 +245,14 @@ type GltSysInfo struct {
 		QKey    string `xml:"Q_Key,attr"`
 		NTag    string `xml:"N_Tag,attr"`
 	} `xml:"SYS"`
+}
+
+type GltDeptInfo struct {
 	Footer struct {
 		Text string `xml:",chardata"`
 		No   string `xml:"No,attr"`
 		EOT  string `xml:"EOT,attr"`
 	} `xml:"Footer"`
-}
-
-type GltDeptInfo struct {
 	XMLName xml.Name `xml:"GLT"`
 	Text    string   `xml:",chardata"`
 	DEPT    []struct {
@@ -258,14 +263,14 @@ type GltDeptInfo struct {
 		Avoid    string `xml:"Avoid,attr"`
 		QKey     string `xml:"Q_Key,attr"`
 	} `xml:"DEPT"`
+}
+
+type GltSiteInfo struct {
 	Footer struct {
 		Text string `xml:",chardata"`
 		No   string `xml:"No,attr"`
 		EOT  string `xml:"EOT,attr"`
 	} `xml:"Footer"`
-}
-
-type GltSiteInfo struct {
 	XMLName xml.Name `xml:"GLT"`
 	Text    string   `xml:",chardata"`
 	SITE    []struct {
@@ -276,11 +281,6 @@ type GltSiteInfo struct {
 		Avoid  string `xml:"Avoid,attr"`
 		QKey   string `xml:"Q_Key,attr"`
 	} `xml:"SITE"`
-	Footer struct {
-		Text string `xml:",chardata"`
-		No   string `xml:"No,attr"`
-		EOT  string `xml:"EOT,attr"`
-	} `xml:"Footer"`
 }
 
 // GLT CFREQ
@@ -292,6 +292,11 @@ type GltSiteInfo struct {
 // GLT ATGID
 
 type GltFto struct {
+	Footer struct {
+		Text string `xml:",chardata"`
+		No   string `xml:"No,attr"`
+		EOT  string `xml:"EOT,attr"`
+	} `xml:"Footer"`
 	XMLName xml.Name `xml:"GLT"`
 	Text    string   `xml:",chardata"`
 	FTO     []struct {
@@ -303,14 +308,14 @@ type GltFto struct {
 		ToneA string `xml:"ToneA,attr"`
 		ToneB string `xml:"ToneB,attr"`
 	} `xml:"FTO"`
+}
+
+type GltCSBank struct {
 	Footer struct {
 		Text string `xml:",chardata"`
 		No   string `xml:"No,attr"`
 		EOT  string `xml:"EOT,attr"`
 	} `xml:"Footer"`
-}
-
-type GltCSBank struct {
 	XMLName xml.Name `xml:"GLT"`
 	Text    string   `xml:",chardata"`
 	CSBANK  []struct {
@@ -322,11 +327,6 @@ type GltCSBank struct {
 		Mod   string `xml:"Mod,attr"`
 		Step  string `xml:"Step,attr"`
 	} `xml:"CS_BANK"`
-	Footer struct {
-		Text string `xml:",chardata"`
-		No   string `xml:"No,attr"`
-		EOT  string `xml:"EOT,attr"`
-	} `xml:"Footer"`
 }
 
 // GLT,UREC
@@ -336,6 +336,11 @@ type GltCSBank struct {
 // GLT,UREC_FILE,[folder_index]
 
 type GltUrecFolder struct {
+	Footer struct {
+		Text string `xml:",chardata"`
+		No   string `xml:"No,attr"`
+		EOT  string `xml:"EOT,attr"`
+	} `xml:"Footer"`
 	XMLName    xml.Name `xml:"GLT"`
 	Text       string   `xml:",chardata"`
 	URECFOLDER []struct {
@@ -343,14 +348,14 @@ type GltUrecFolder struct {
 		Index string `xml:"Index,attr"`
 		Name  string `xml:"Name,attr"`
 	} `xml:"UREC_FOLDER"`
+}
+
+type GltTrnDiscovery struct {
 	Footer struct {
 		Text string `xml:",chardata"`
 		No   string `xml:"No,attr"`
 		EOT  string `xml:"EOT,attr"`
 	} `xml:"Footer"`
-}
-
-type GltTrnDiscovery struct {
 	XMLName   xml.Name `xml:"GLT"`
 	Text      string   `xml:",chardata"`
 	TRNDISCOV []struct {
@@ -366,15 +371,15 @@ type GltTrnDiscovery struct {
 		TimeOutTimer string `xml:"TimeOutTimer,attr"`
 		AutoStore    string `xml:"AutoStore,attr"`
 	} `xml:"TRN_DISCOV"`
+}
+
+// GLT,CNV_DISCOV
+type GltCnvDiscovery struct {
 	Footer struct {
 		Text string `xml:",chardata"`
 		No   string `xml:"No,attr"`
 		EOT  string `xml:"EOT,attr"`
 	} `xml:"Footer"`
-}
-
-// GLT,CNV_DISCOV
-type GltCnvDiscovery struct {
 	XMLName   xml.Name `xml:"GLT"`
 	Text      string   `xml:",chardata"`
 	CNVDISCOV []struct {
@@ -391,14 +396,14 @@ type GltCnvDiscovery struct {
 		TimeOutTimer string `xml:"TimeOutTimer,attr"`
 		AutoStore    string `xml:"AutoStore,attr"`
 	} `xml:"CNV_DISCOV"`
+}
+
+type MsiInfo struct {
 	Footer struct {
 		Text string `xml:",chardata"`
 		No   string `xml:"No,attr"`
 		EOT  string `xml:"EOT,attr"`
 	} `xml:"Footer"`
-}
-
-type MsiInfo struct {
 	XMLName  xml.Name `xml:"MSI"`
 	Text     string   `xml:",chardata"`
 	Name     string   `xml:"Name,attr"`
@@ -411,11 +416,6 @@ type MsiInfo struct {
 		Name  string `xml:"Name,attr"`
 		Index string `xml:"Index,attr"`
 	} `xml:"MenuItem"`
-	Footer struct {
-		Text string `xml:",chardata"`
-		No   string `xml:"No,attr"`
-		EOT  string `xml:"EOT,attr"`
-	} `xml:"Footer"`
 }
 
 type ScannerStatus struct {
@@ -533,8 +533,8 @@ func NewScannerStatus(raw string) *ScannerStatus {
 const DateTimeFormat = "2006,1,2,15,4,5"
 
 type DateTimeInfo struct {
-	DaylightSavings bool
 	Time            *time.Time
+	DaylightSavings bool
 	RTCOK           bool
 }
 
@@ -573,9 +573,9 @@ func (l *LocationInfo) String() string {
 
 func NewLocationInfo(raw string) *LocationInfo {
 	split := strings.Split(raw, ",")
-	lat, _ := strconv.ParseFloat(split[0], 10)
-	lon, _ := strconv.ParseFloat(split[1], 10)
-	ran, _ := strconv.ParseFloat(split[2], 10)
+	lat, _ := strconv.ParseFloat(split[0], 32)
+	lon, _ := strconv.ParseFloat(split[1], 32)
+	ran, _ := strconv.ParseFloat(split[2], 32)
 	return &LocationInfo{
 		Latitude:  lat,
 		Longitude: lon,
@@ -584,9 +584,9 @@ func NewLocationInfo(raw string) *LocationInfo {
 }
 
 type UserRecordStatus struct {
-	Recording    bool
 	ErrorCode    *int
 	ErrorMessage *string
+	Recording    bool
 }
 
 func (u *UserRecordStatus) String() string {
@@ -649,8 +649,8 @@ func (m *MenuBack) String() string {
 }
 
 type MenuSetValue struct {
-	ItemIndex int
 	Value     string
+	ItemIndex int
 }
 
 func (m *MenuSetValue) String() string {
@@ -670,13 +670,13 @@ func (k *KeyPress) String() string {
 }
 
 type AudioFeedFile struct {
+	Timestamp      *time.Time
+	Metadata       *wavparse.Recording
 	Name           string
+	Data           []byte
 	Size           int64
 	ExpectedBlocks int64
-	Timestamp      *time.Time
-	Data           []byte
 	Finished       bool
-	Metadata       *wavparse.Recording
 }
 
 func (a *AudioFeedFile) ParseMetadata(file string) error {

@@ -70,10 +70,10 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 					return
 				}
 
-				if !validMsgFromWSClient(msgFromHost) {
-					log.Warnln("Message From WS Failed Validation", crlfStrip(msgFromHost, LF))
-					return
-				}
+				// if !validMsgFromWSClient(msgFromHost) {
+				// 	log.Warnln("Message From WS Failed Validation", crlfStrip(msgFromHost, LF))
+				// 	return
+				// }
 
 				strMsg := string(crlfStrip(msgFromHost, LF))
 				if strMsg == TERMINATE {
@@ -164,7 +164,7 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 	return s, nil
 }
 
-// TODO -- add msg validation
-func validMsgFromWSClient(msgFromHost []byte) bool {
-	return true
-}
+// TODO: add msg validation
+// func validMsgFromWSClient(msgFromHost []byte) bool {
+// 	return true
+// }

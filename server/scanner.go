@@ -12,43 +12,45 @@ import (
 )
 
 type MsgPacket struct {
-	msg        []byte
 	ts         time.Time
+	msg        []byte
 	homePatrol bool
 }
 
 type Locker struct {
-	sync.Mutex
-	state   bool
 	name    string
 	pktSent uint64
 	pktRecv uint64
+	sync.Mutex
+	state bool
 }
 
-type APRModeType string
-type ASTModeType string
+type (
+	APRModeType string
+	ASTModeType string
+)
 
 type Modal struct {
-	PSI               bool // PSI Mode on/Off
-	WSClientConnected bool
 	ASTMode           ASTModeType
 	APRMode           APRModeType
+	PSI               bool
+	WSClientConnected bool
 }
 
 type ScannerCtrl struct {
-	locker           Locker
+	conn             *ScannerConn
 	rq               chan bool
 	wq               chan bool
 	drained          chan bool
 	radioMsg         chan MsgPacket
 	hostMsg          chan MsgPacket
-	conn             *ScannerConn
 	s                *http.Server
 	c                chan os.Signal
+	incomingFile     *AudioFeedFile
+	mode             Modal
+	locker           Locker
 	GoProcDelay      time.Duration
 	GoProcMultiplier time.Duration
-	mode             Modal
-	incomingFile     *AudioFeedFile
 }
 
 func (s *ScannerCtrl) IsLocked() bool {
