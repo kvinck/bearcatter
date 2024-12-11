@@ -10,10 +10,12 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path"
 	"strings"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -74,13 +76,14 @@ func (c *Config) Serve() {
 		}
 	}(ctrl)
 
-	// receive message from server
+	// receive message from scanner
 	go func(ctrl *ScannerCtrl) {
-		do_quit := false
+		doQuit := false
 
 		xmlMessage := make([]byte, 0)
 		isXML := false
 		var xmlMessageType string
+		var bar *progressbar.ProgressBar
 
 		for {
 			// ctrl.conn.SetReadDeadline(time.Now().Add(1 * time.Second))
@@ -94,7 +97,7 @@ func (c *Config) Serve() {
 				} else {
 					log.Errorln("Unknown error, quitting!")
 					// so we timedout - and if we've received a quit then exit after draining the upd packets
-					if do_quit {
+					if doQuit {
 						select {
 						case ctrl.drained <- true:
 							log.Infoln("Draining Packets")
@@ -357,9 +360,11 @@ func (c *Config) Serve() {
 				if len(split) > 2 {
 					if split[2] == "ERR" {
 						log.Warnln("Scanner threw ERR during file transfer!")
+						ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA", "CAN"})))
 						continue
 					} else if split[2] == "NG" {
 						log.Warnln("Scanner said last command was invalid during file transfer")
+						ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA", "CAN"})))
 						continue
 					}
 				}
@@ -376,16 +381,22 @@ func (c *Config) Serve() {
 				case "INFO":
 					ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO", "ACK"})))
 
+					if split[2] == "" { // No new file
+						continue
+					}
+
 					newFile, newFileErr := NewAudioFeedFile(split[2:])
 					if newFileErr != nil {
-						if newFileErr != ErrNoFile {
-							log.Errorln("Error processing new file notification!", newFileErr)
-						}
-						continue
+						log.Errorln("Error processing new file notification!", newFileErr)
 					}
 					log.Infof("File %s: Beginning to transfer: Size: %d, ExpectedBlocks: %d, Timestamp: %v\n", newFile.Name, newFile.Size, newFile.ExpectedBlocks, newFile.Timestamp)
 					ctrl.incomingFile = newFile
-
+					bar = progressbar.NewOptions64(ctrl.incomingFile.ExpectedBlocks,
+						progressbar.OptionSetDescription(fmt.Sprintf("File %s", ctrl.incomingFile.Name)),
+						progressbar.OptionShowCount(),
+						progressbar.OptionFullWidth(),
+						progressbar.OptionClearOnFinish())
+					bar.RenderBlank()
 					ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA"})))
 				case "DATA":
 					dataSubCmd := split[2]
@@ -393,7 +404,7 @@ func (c *Config) Serve() {
 					case "EOT":
 						// End of transmission
 						log.Infof("File %s: Finished receiving with file length %d\n", ctrl.incomingFile.Name, ctrl.incomingFile.Size)
-
+						bar.Finish()
 						ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA", "ACK"})))
 
 						ctrl.incomingFile.Finished = true
@@ -420,12 +431,32 @@ func (c *Config) Serve() {
 							log.Errorf("File %s: Error when saving metadata file: %v\n", ctrl.incomingFile.Name, saveMetadataErr)
 							continue
 						}
+
+						newDir := path.Join(c.RecordingsPath, strings.ReplaceAll(ctrl.incomingFile.Metadata.Public.System, "/", "-"), strings.ReplaceAll(ctrl.incomingFile.Metadata.Public.Department, "/", "-"), strings.ReplaceAll(ctrl.incomingFile.Metadata.Public.Channel, "/", "-"), ctrl.incomingFile.Name)
+
+						if err := os.MkdirAll(path.Dir(newDir), 0777); err != nil {
+							log.Errorf("File %s: Error when creating directory: %v\n", ctrl.incomingFile.Name, err)
+							continue
+						}
+
+						os.Rename(filePath, newDir)
+						os.Rename(fmt.Sprintf("%s.json", filePath), fmt.Sprintf("%s.json", newDir))
+
+						//log.Infof("File %s: Transcribing file", ctrl.incomingFile.Name)
+						//
+						//whisper := exec.Command("whisper", "--language", "en", "--output_format", "txt", "-o", path.Dir(filePath), filePath)
+						//out, err := whisper.Output()
+						//if err != nil {
+						//	log.Errorf("File %s: Could not transcribe: %s (%s)", err, string(out))
+						//}
+						//log.Infof("File %s: Finished transcribing file.", ctrl.incomingFile.Name)
 					case "CAN":
 						log.Warnf("File %s: Transfer canceled by scanner!\n", ctrl.incomingFile.Name)
 					default: // Receiving data
 						blockNum := split[2]
 						fileData := split[3]
 						log.Debugf("File %s: Received block %s of %d with file length %d\n", ctrl.incomingFile.Name, blockNum, ctrl.incomingFile.ExpectedBlocks, len(fileData))
+						bar.Add(1)
 						hexData, hexDataErr := hex.DecodeString(fileData)
 						if hexDataErr != nil {
 							// TODO: If we hit an error here we should DATA NAK so block gets re-delivered.
@@ -448,7 +479,7 @@ func (c *Config) Serve() {
 			select {
 			case <-ctrl.rq:
 				log.Infoln("Shutting down reader...")
-				do_quit = true
+				doQuit = true
 			default:
 				time.Sleep(time.Millisecond * ctrl.GoProcDelay)
 			}
