@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path"
 	"strings"
@@ -442,14 +443,50 @@ func (c *Config) Serve() {
 						os.Rename(filePath, newDir)
 						os.Rename(fmt.Sprintf("%s.json", filePath), fmt.Sprintf("%s.json", newDir))
 
-						//log.Infof("File %s: Transcribing file", ctrl.incomingFile.Name)
-						//
-						//whisper := exec.Command("whisper", "--language", "en", "--output_format", "txt", "-o", path.Dir(filePath), filePath)
-						//out, err := whisper.Output()
-						//if err != nil {
-						//	log.Errorf("File %s: Could not transcribe: %s (%s)", err, string(out))
-						//}
-						//log.Infof("File %s: Finished transcribing file.", ctrl.incomingFile.Name)
+						go func() {
+							ffmpegArgs := []string{
+								"-i", newDir,
+								"-vn",
+								"-acodec", "pcm_s16le",
+								"-ar", "16000",
+								"-ac", "2",
+								"-y",
+								newDir + ".temp.wav",
+							}
+							ffmpeg := exec.Command("ffmpeg", ffmpegArgs...)
+							out, err := ffmpeg.Output()
+							if err != nil {
+								log.Errorf("File %s: Could not transcode: %s (%s)", newDir, err, string(out))
+							}
+
+							whisperArgs := []string{
+								"-t", "16",
+								"-p", "1",
+								"-otxt",
+								"-of", newDir,
+								"-l", "en",
+								"-bs", "5",
+								"-bo", "5",
+								"-m", "/Users/kevinvinck/git/whisper.cpp/models/ggml-large-v3-turbo.bin",
+								"-f", newDir + ".temp.wav",
+								"--prompt", "\"Hello.\"",
+							}
+
+							whisper := exec.Command("whispercpp", whisperArgs...)
+							_, err = whisper.Output()
+							if err != nil {
+								switch e := err.(type) {
+								case *exec.Error:
+									fmt.Println("failed executing:", err)
+								case *exec.ExitError:
+									log.Errorf("File %s: Could not transcribe: %s (%s)", newDir, err, string(e.Stderr))
+									return
+								default:
+									panic(err)
+								}
+							}
+							os.Remove(newDir + ".temp.wav")
+						}()
 					case "CAN":
 						log.Warnf("File %s: Transfer canceled by scanner!\n", ctrl.incomingFile.Name)
 					default: // Receiving data
