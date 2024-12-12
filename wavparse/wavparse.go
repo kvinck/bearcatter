@@ -263,6 +263,9 @@ func parseBool(boolStr string) (bool, error) {
 	if boolStr == "on" {
 		return true, nil
 	}
+	if boolStr == "of" {
+		return false, nil
+	}
 	if boolStr == "off" {
 		return false, nil
 	}
